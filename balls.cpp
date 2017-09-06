@@ -7,6 +7,8 @@
 using namespace std;
 
 #define ID_TIMER1 0
+#define FREQ_TIMER1 1
+
 #define sgn(x) ((x) < 0 ? -1 : ((x) > 0 ? 1 : 0))
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -15,7 +17,7 @@ struct GrCircle {
    GrCircle(int x_i, int y_i, int r_i): x(x_i), y(y_i), r(r_i) {}
 };
 
-queue<GrCircle*> balls;
+queue<GrCircle*> brushes;
 queue<void*> objects;
 
 struct StaticBall {
@@ -24,9 +26,7 @@ struct StaticBall {
    HWND hwnd;
    StaticBall(HWND hwnd_i, double x_i, double y_i, double r_i, int color_i): x(x_i), y(y_i), r(r_i), color(color_i), hwnd(hwnd_i) {}
    virtual ~StaticBall() {}
-   void Draw() {
-      balls.push(new GrCircle(x, y, r));
-   }
+   void Draw() {}
 };
 
 struct MainBall: public StaticBall {
@@ -50,12 +50,11 @@ struct MainBall: public StaticBall {
 	 dx /= 2;
 	 dy /= 2;
       }
-      printf("%.2f\n", dx*dx + dy*dy);
    }
    void Move(int xlimit, int ylimit) {
       double x1 = x + dx/2, y1 = y + dy/2, x2, y2, x3, y3, x5, y5, x6 = x + dx + r*sgn(dx), y6 = y + dy + r*sgn(dy), 
          x7 = x - r*sgn(dx), y7 = y + r*sgn(dy), x8, y8, tv1, tv2;
-      balls.push(new GrCircle(x, y, r));
+      brushes.push(new GrCircle(x, y, r));
       for (int i = 0; i < objects.size(); i++) {
 	 StaticBall *p = (StaticBall*) objects.front();
 	 objects.pop();
@@ -138,7 +137,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 
     switch (iMsg) {
     case WM_CREATE:
-       SetTimer(hwnd, ID_TIMER1, 20, NULL);
+       SetTimer(hwnd, ID_TIMER1, FREQ_TIMER1, NULL);
        return 0;
 
     case WM_TIMER:
@@ -156,13 +155,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
        hdc = BeginPaint(hwnd, &ps);
        sprintf(s, "Objects = %d", objects.size());
        TextOut(hdc, 0, 0, s, strlen(s));
-       sprintf(s, "Speed = %.2f", sqrt(pb->dx*pb->dx+pb->dy*pb->dy));
+       sprintf(s, "Speed = %.2f", sqrt(pb->dx*pb->dx + pb->dy*pb->dy));
        TextOut(hdc, 0, 20, s, strlen(s));
        SelectObject(hdc, GetStockObject(WHITE_PEN));
        SelectObject(ps.hdc, GetStockObject(WHITE_PEN));
-       while (!balls.empty()) {
-          GrCircle *b = balls.front();
-	  balls.pop();
+       while (!brushes.empty()) {
+          GrCircle *b = brushes.front();
+	  brushes.pop();
           Ellipse(ps.hdc, b->x - b->r, b->y - b->r, b->x + b->r, b->y + b->r);
           delete b;
        }
