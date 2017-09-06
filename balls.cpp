@@ -4,10 +4,12 @@
 #include <cstdlib>
 #include <queue>
 #include <cmath>
+#include <algorithm>
+#include <ctime>
 using namespace std;
 
 #define ID_TIMER1 0
-#define FREQ_TIMER1 1
+#define FREQ_TIMER1 10
 
 #define sgn(x) ((x) < 0 ? -1 : ((x) > 0 ? 1 : 0))
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -26,14 +28,11 @@ struct StaticBall {
    HWND hwnd;
    StaticBall(HWND hwnd_i, double x_i, double y_i, double r_i, int color_i): x(x_i), y(y_i), r(r_i), color(color_i), hwnd(hwnd_i) {}
    virtual ~StaticBall() {}
-   void Draw() {}
 };
 
 struct MainBall: public StaticBall {
    double dx, dy;  //velocity vector
    MainBall(HWND hwnd_i, double x_i, double y_i, double r_i, int color_i, double dx_i, double dy_i): StaticBall(hwnd_i, x_i, y_i, r_i, color_i), dx(dx_i), dy(dy_i) {
-      Draw();
-      InvalidateRect(hwnd, NULL, FALSE);
       objects.push(this);
    }
    virtual ~MainBall() {}
@@ -51,10 +50,7 @@ struct MainBall: public StaticBall {
 	 dy /= 2;
       }
    }
-   void Move(int xlimit, int ylimit) {
-      double x1 = x + dx/2, y1 = y + dy/2, x2, y2, x3, y3, x5, y5, x6 = x + dx + r*sgn(dx), y6 = y + dy + r*sgn(dy), 
-         x7 = x - r*sgn(dx), y7 = y + r*sgn(dy), x8, y8, tv1, tv2;
-      brushes.push(new GrCircle(x, y, r));
+   void CollidingDetector() {
       for (int i = 0; i < objects.size(); i++) {
 	 StaticBall *p = (StaticBall*) objects.front();
 	 objects.pop();
@@ -62,14 +58,17 @@ struct MainBall: public StaticBall {
 	    objects.push(p);
 	    continue;
 	 }
-	 x5 = p->x;
-	 y5 = p->y;
-	 tv1 = (y5 - y1)*(x7 - x6) - (y7 - y6)*(x5 - x1);
-	 tv2 = (y5 - y1)*(x7 - x8) - (y7 - y8)*(x5 - x1);
-         objects.push(p);
+         if (pow(x + dx - p->x, 2) + pow(y + dy - p->y, 2) <= r*r + p->r*p->r) 
+	    brushes.push(new GrCircle(p->x, p->y, p->r));
+	 else
+            objects.push(p);
       }
+   }
+   void Move(int xlimit, int ylimit) {
+      brushes.push(new GrCircle(x, y, r));
       x += dx;
       y += dy;
+      CollidingDetector();
       if (x - r < 0 || x + r > xlimit) {
 	 dx = -dx;
 	 if (x - r < 0)
@@ -116,8 +115,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			NULL, NULL, hInstance, NULL);
-    
-    pb = new MainBall(hwnd, 100, 100, 40, BLACK_BRUSH, 7, 1);
+    for(int i = 0; i < time(0)%77 + 7; i++) rand();
+    printf("%lu\n", rand());
+    pb = new MainBall(hwnd, 100, 100, floor(rand()*6./RAND_MAX + 5), BLACK_BRUSH, 7, 1);
+    printf("Radious = %.1f\n", pb->r);
     
     ShowWindow(hwnd, iCmdShow);
     UpdateWindow(hwnd);
@@ -153,16 +154,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
     case WM_PAINT: {
        char s[80];
        hdc = BeginPaint(hwnd, &ps);
-       sprintf(s, "Objects = %d", objects.size());
+       sprintf(s, "Objects = %d  ", objects.size());
        TextOut(hdc, 0, 0, s, strlen(s));
-       sprintf(s, "Speed = %.2f", sqrt(pb->dx*pb->dx + pb->dy*pb->dy));
+       sprintf(s, "Speed = %.2f  ", sqrt(pb->dx*pb->dx + pb->dy*pb->dy));
        TextOut(hdc, 0, 20, s, strlen(s));
        SelectObject(hdc, GetStockObject(WHITE_PEN));
        SelectObject(ps.hdc, GetStockObject(WHITE_PEN));
        while (!brushes.empty()) {
           GrCircle *b = brushes.front();
 	  brushes.pop();
-          Ellipse(ps.hdc, b->x - b->r, b->y - b->r, b->x + b->r, b->y + b->r);
+          Ellipse(ps.hdc, b->x - b->r - 1, b->y - b->r - 1, b->x + b->r + 1, b->y + b->r + 1);
           delete b;
        }
        for (int i = 0; i < objects.size(); i++) {
@@ -176,7 +177,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
        return 0;
     }
     case WM_LBUTTONDOWN: {
-       objects.push(new StaticBall(hwnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), 20, BLACK_BRUSH));
+       objects.push(new StaticBall(hwnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), floor(96.*rand()/RAND_MAX + 5), BLACK_BRUSH));
        return 0;
     }
     
