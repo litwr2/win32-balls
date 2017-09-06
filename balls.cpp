@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <queue>
+#include <cmath>
 using namespace std;
 
 #define ID_TIMER1 0
@@ -18,9 +19,10 @@ queue<GrCircle*> balls;
 queue<void*> objects;
 
 struct StaticBall {
-   int x, y, r, color;
+   double x, y, r;
+   int color;
    HWND hwnd;
-   StaticBall(HWND hwnd_i, int x_i, int y_i, unsigned r_i, int color_i): x(x_i), y(y_i), r(r_i), color(color_i), hwnd(hwnd_i) {}
+   StaticBall(HWND hwnd_i, double x_i, double y_i, double r_i, int color_i): x(x_i), y(y_i), r(r_i), color(color_i), hwnd(hwnd_i) {}
    virtual ~StaticBall() {}
    void Draw() {
       balls.push(new GrCircle(x, y, r));
@@ -28,24 +30,45 @@ struct StaticBall {
 };
 
 struct MainBall: public StaticBall {
-   int dx, dy;  //velocity vector
-   MainBall(HWND hwnd_i, int x_i, int y_i, unsigned r_i, int color_i, int dx_i, int dy_i): StaticBall(hwnd_i, x_i, y_i, r_i, color_i), dx(dx_i), dy(dy_i) {
+   double dx, dy;  //velocity vector
+   MainBall(HWND hwnd_i, double x_i, double y_i, double r_i, int color_i, double dx_i, double dy_i): StaticBall(hwnd_i, x_i, y_i, r_i, color_i), dx(dx_i), dy(dy_i) {
       Draw();
       InvalidateRect(hwnd, NULL, FALSE);
       objects.push(this);
    }
    virtual ~MainBall() {}
+   void new_velocity() {
+      double r = (double)rand()*2/RAND_MAX;
+      if (r < 0.5) r += 1;
+      dx *= r;
+      dy *= r;
+      while (dx*dx + dy*dy < 1) {
+	 dx *= 2;
+	 dy *= 2;
+      }
+      while (dx*dx + dy*dy > 100) {
+	 dx /= 2;
+	 dy /= 2;
+      }
+      printf("%.2f\n", dx*dx + dy*dy);
+   }
    void Move(int xlimit, int ylimit) {
+      double x1 = x + dx/2, y1 = y + dy/2, x2, y2, x3, y3, x5, y5, x6 = x + dx + r*sgn(dx), y6 = y + dy + r*sgn(dy), 
+         x7 = x - r*sgn(dx), y7 = y + r*sgn(dy), x8, y8, tv1, tv2;
       balls.push(new GrCircle(x, y, r));
-      /*for (int i = 0; i < objects.size(); i++) {
+      for (int i = 0; i < objects.size(); i++) {
 	 StaticBall *p = (StaticBall*) objects.front();
 	 objects.pop();
 	 if (p == this) {
 	    objects.push(p);
 	    continue;
 	 }
+	 x5 = p->x;
+	 y5 = p->y;
+	 tv1 = (y5 - y1)*(x7 - x6) - (y7 - y6)*(x5 - x1);
+	 tv2 = (y5 - y1)*(x7 - x8) - (y7 - y8)*(x5 - x1);
          objects.push(p);
-      }*/
+      }
       x += dx;
       y += dy;
       if (x - r < 0 || x + r > xlimit) {
@@ -54,6 +77,7 @@ struct MainBall: public StaticBall {
 	    x = r;
 	 else
 	    x = xlimit - r;
+	 new_velocity();
       }
       if (y + r > ylimit || y - r < 0) {
 	 dy = -dy;
@@ -61,6 +85,7 @@ struct MainBall: public StaticBall {
 	    y = r;
 	 else
 	    y = ylimit - r;
+	 new_velocity();
       }
    }
 } *pb;
@@ -126,8 +151,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
     }
     break;
 
-    case WM_PAINT:
+    case WM_PAINT: {
+       char s[80];
        hdc = BeginPaint(hwnd, &ps);
+       sprintf(s, "Objects = %d", objects.size());
+       TextOut(hdc, 0, 0, s, strlen(s));
+       sprintf(s, "Speed = %.2f", sqrt(pb->dx*pb->dx+pb->dy*pb->dy));
+       TextOut(hdc, 0, 20, s, strlen(s));
        SelectObject(hdc, GetStockObject(WHITE_PEN));
        SelectObject(ps.hdc, GetStockObject(WHITE_PEN));
        while (!balls.empty()) {
@@ -145,7 +175,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
        }
        EndPaint(hwnd, &ps);
        return 0;
-
+    }
     case WM_LBUTTONDOWN: {
        objects.push(new StaticBall(hwnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), 20, BLACK_BRUSH));
        return 0;
