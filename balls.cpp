@@ -13,17 +13,15 @@ using namespace std;
 #define sgn(x) ((x) < 0 ? -1 : ((x) > 0 ? 1 : 0))
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-struct GrCircle {
+struct Cleaner {
    int x, y, r;
-   GrCircle(int x_i, int y_i, int r_i): x(x_i), y(y_i), r(r_i) {}
+   Cleaner(int x_i, int y_i, int r_i): x(x_i), y(y_i), r(r_i) {}
 };
 
-queue<GrCircle*> brushes;
+queue<Cleaner*> cleaners;
 queue<void*> objects;
 HPEN        hPen;
 HBRUSH      hBrush;
-HPEN pen_colors[2] = {};
-HBRUSH brush_colors[2] = {};
 
 struct StaticBall {
    double x, y, r;
@@ -69,13 +67,13 @@ struct MainBall: public StaticBall {
 	       break;
 	    }
          if (f) 
-	    brushes.push(new GrCircle(p->x, p->y, p->r));
+	    cleaners.push(new Cleaner(p->x, p->y, p->r));
 	 else
             objects.push(p);
       }
    }
    void Move(int xlimit, int ylimit) {
-      brushes.push(new GrCircle(x, y, r));
+      cleaners.push(new Cleaner(x, y, r));
       x += dx;
       y += dy;
       CollidingDetector();
@@ -132,8 +130,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     UpdateWindow(hwnd);
     
     while ( GetMessage(&msg, NULL, 0, 0) ) {
-	TranslateMessage(&msg);    /*  for certain keyboard messages  */
-	DispatchMessage(&msg);     /*  send message to WndProc        */
+	TranslateMessage(&msg);
+	DispatchMessage(&msg);
     } 
 
     return msg.wParam;
@@ -166,9 +164,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
        hdc = BeginPaint(hwnd, &ps);
        SelectObject(hdc, GetStockObject(WHITE_PEN));
        SelectObject(ps.hdc, GetStockObject(WHITE_PEN));
-       while (!brushes.empty()) {
-          GrCircle *b = brushes.front();
-	  brushes.pop();
+       while (!cleaners.empty()) {
+          Cleaner *b = cleaners.front();
+	  cleaners.pop();
           Ellipse(ps.hdc, b->x - b->r - 1, b->y - b->r - 1, b->x + b->r + 1, b->y + b->r + 1);
           delete b;
        }
@@ -193,6 +191,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
        EndPaint(hwnd, &ps);
        return 0;
     }
+    
     case WM_LBUTTONDOWN: {
        objects.push(new StaticBall(hwnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), floor(96.*rand()/RAND_MAX + 5), 1));
        return 0;
