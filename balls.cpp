@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <queue>
 #include <cmath>
-#include <algorithm>
 #include <ctime>
 using namespace std;
 
@@ -21,6 +20,10 @@ struct GrCircle {
 
 queue<GrCircle*> brushes;
 queue<void*> objects;
+HPEN        hPen;
+HBRUSH      hBrush;
+HPEN pen_colors[2] = {};
+HBRUSH brush_colors[2] = {};
 
 struct StaticBall {
    double x, y, r;
@@ -58,7 +61,14 @@ struct MainBall: public StaticBall {
 	    objects.push(p);
 	    continue;
 	 }
-         if (pow(x + dx - p->x, 2) + pow(y + dy - p->y, 2) <= r*r + p->r*p->r) 
+	 double speed = sqrt(dx*dx + dy*dy);
+	 int f = 0;
+	 for (double i = speed; i > 0; i -= 1)
+	   if (pow(x + dx*i/speed - p->x, 2) + pow(y + dy*i/speed - p->y, 2) <= (r + 1)*(r + 1) + (p->r + 1)*(p->r + 1)) {
+	       f = 1;
+	       break;
+	    }
+         if (f) 
 	    brushes.push(new GrCircle(p->x, p->y, p->r));
 	 else
             objects.push(p);
@@ -115,10 +125,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			NULL, NULL, hInstance, NULL);
-    for(int i = 0; i < time(0)%77 + 7; i++) rand();
-    printf("%lu\n", rand());
-    pb = new MainBall(hwnd, 100, 100, floor(rand()*6./RAND_MAX + 5), BLACK_BRUSH, 7, 1);
-    printf("Radious = %.1f\n", pb->r);
+    for(int i = 0; i < time(0)%777; i++) rand();  //better than srand(timer(0))
+    pb = new MainBall(hwnd, 100, 100, floor(rand()*6./RAND_MAX + 5), 0, floor(rand()*10./RAND_MAX + 1), floor(rand()*10./RAND_MAX + 1));
     
     ShowWindow(hwnd, iCmdShow);
     UpdateWindow(hwnd);
@@ -135,10 +143,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
     PAINTSTRUCT ps;
     HDC         hdc;
     RECT        s;
-
+    
     switch (iMsg) {
     case WM_CREATE:
        SetTimer(hwnd, ID_TIMER1, FREQ_TIMER1, NULL);
+       hBrush = CreateSolidBrush(RGB(250, 0, 0));
+       hPen = CreatePen(PS_SOLID, 1, RGB(250, 10, 5));
        return 0;
 
     case WM_TIMER:
@@ -154,10 +164,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
     case WM_PAINT: {
        char s[80];
        hdc = BeginPaint(hwnd, &ps);
-       sprintf(s, "Objects = %d  ", objects.size());
-       TextOut(hdc, 0, 0, s, strlen(s));
-       sprintf(s, "Speed = %.2f  ", sqrt(pb->dx*pb->dx + pb->dy*pb->dy));
-       TextOut(hdc, 0, 20, s, strlen(s));
        SelectObject(hdc, GetStockObject(WHITE_PEN));
        SelectObject(ps.hdc, GetStockObject(WHITE_PEN));
        while (!brushes.empty()) {
@@ -170,18 +176,31 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	  StaticBall *p = (StaticBall*) objects.front();
 	  objects.pop();
 	  objects.push(p);
-	  SelectObject(ps.hdc, GetStockObject(BLACK_BRUSH));
+	  if (p->color == 0) {
+	     SelectObject(ps.hdc, GetStockObject(BLACK_BRUSH));
+	     SelectObject(hdc, GetStockObject(BLACK_PEN));
+	  }
+	  else {
+	     SelectObject(ps.hdc, hBrush);
+	     SelectObject(hdc, hPen);
+	  }
 	  Ellipse(ps.hdc, p->x - p->r, p->y - p->r, p->x + p->r, p->y + p->r);
        }
+       sprintf(s, "Objects = %d  ", objects.size());
+       TextOut(hdc, 0, 0, s, strlen(s));
+       sprintf(s, "Speed = %.2f  ", sqrt(pb->dx*pb->dx + pb->dy*pb->dy));
+       TextOut(hdc, 0, 20, s, strlen(s));       
        EndPaint(hwnd, &ps);
        return 0;
     }
     case WM_LBUTTONDOWN: {
-       objects.push(new StaticBall(hwnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), floor(96.*rand()/RAND_MAX + 5), BLACK_BRUSH));
+       objects.push(new StaticBall(hwnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), floor(96.*rand()/RAND_MAX + 5), 1));
        return 0;
     }
     
     case WM_DESTROY:
+       DeleteObject(hPen);
+       DeleteObject(hBrush);
        KillTimer(hwnd, ID_TIMER1);
        PostQuitMessage(0);
        return 0;

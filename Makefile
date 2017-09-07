@@ -1,12 +1,7 @@
+#for Linux with MinGW
 CC		= /opt/mxe/usr/bin/i686-pc-mingw32-gcc
 CXX		= /opt/mxe/usr/bin/i686-pc-mingw32-g++
 RESC		= /opt/mxe/usr/bin/i686-pc-mingw32-windres
-#CC		= /opt/mingw64/bin/x86_64-w64-mingw32-gcc
-#CXX		= /opt/mingw64/bin/x86_64-w64-mingw32-g++
-#RESC		= /opt/mingw64/bin/x86_64-w64-mingw32-windres
-#CC		= i586-mingw32msvc-g++
-#CXX		= i586-mingw32msvc-g++
-#RESC		= i586-mingw32msvc-windres
 
 CFLAGS1		= -s -O3 -mwindows -posix
 CFILE		= balls
