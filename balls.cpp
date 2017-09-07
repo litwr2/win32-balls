@@ -20,8 +20,6 @@ struct Cleaner {
 
 queue<Cleaner*> cleaners;
 queue<void*> objects;
-HPEN        hPen;
-HBRUSH      hBrush;
 
 struct StaticBall {
    double x, y, r;
@@ -98,7 +96,7 @@ struct MainBall: public StaticBall {
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		   LPSTR szCmdLine, int iCmdShow) {
-    static char szAppName[] = "balls";
+    static LPCTSTR szAppName = "balls";
     HWND        hwnd;
     MSG         msg;
     WNDCLASSEX  wndclass = {};
@@ -118,7 +116,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     RegisterClassEx(&wndclass);
 
-    hwnd = CreateWindow(szAppName, "Balls!",
+    hwnd = CreateWindow(szAppName, (LPCTSTR)"Balls!",
 			WS_OVERLAPPEDWINDOW,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			CW_USEDEFAULT, CW_USEDEFAULT,
@@ -130,8 +128,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     UpdateWindow(hwnd);
     
     while ( GetMessage(&msg, NULL, 0, 0) ) {
-	TranslateMessage(&msg);
-	DispatchMessage(&msg);
+       TranslateMessage(&msg);
+       DispatchMessage(&msg);
     } 
 
     return msg.wParam;
@@ -141,7 +139,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
     PAINTSTRUCT ps;
     HDC         hdc;
     RECT        s;
-    
+    static HPEN        hPen;
+    static HBRUSH      hBrush;
+
     switch (iMsg) {
     case WM_CREATE:
        SetTimer(hwnd, ID_TIMER1, FREQ_TIMER1, NULL);
