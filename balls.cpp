@@ -9,13 +9,14 @@ using namespace std;
 
 //#define DOUBLE_BUFFER  //not optimized
 #define TIMER_FREQ 10 //10 milliseconds, a less value means faster
+
 #define sgn(x) ((x) < 0 ? -1 : ((x) > 0 ? 1 : 0))
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 struct Cleaner {
-	int x, y, r;
-	Cleaner(int x_i, int y_i, int r_i): x(x_i), y(y_i), r(r_i) {}
+	double x, y, r;
+	Cleaner(double x_i, double y_i, double r_i) : x(x_i), y(y_i), r(r_i) {}
 };
 
 queue<Cleaner*> cleaners;
@@ -50,8 +51,8 @@ struct MainBall: public StaticBall {
 		}
 	}
 	void CollidingDetector() {
-		for (int i = 0; i < objects.size(); i++) {
-			StaticBall *p = (StaticBall*) objects.front();
+		for (unsigned i = 0; i < objects.size(); i++) {
+			StaticBall *p = (StaticBall*)objects.front();
 			objects.pop();
 			if (p == this) {
 				objects.push(p);
@@ -93,22 +94,22 @@ struct MainBall: public StaticBall {
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow) {
 	static LPCTSTR szAppName = "balls";
-	HWND		hwnd;
-	MSG		msg;
+	HWND hwnd;
+	MSG msg;
 	WNDCLASSEX wndclass = {};
 
-	wndclass.cbSize			= sizeof(wndclass);
-	wndclass.style			 = CS_HREDRAW | CS_VREDRAW;
-	wndclass.lpfnWndProc	 = WndProc;
-	wndclass.cbClsExtra	  = 0;
-	wndclass.cbWndExtra	  = 0;
-	wndclass.hInstance		= hInstance;
-	wndclass.hIcon			 = LoadIcon(NULL, IDI_APPLICATION);
-	wndclass.hIconSm		  = LoadIcon(NULL, IDI_APPLICATION);
-	wndclass.hCursor		  = LoadCursor(NULL, IDC_ARROW);
-	wndclass.hbrBackground  = (HBRUSH) GetStockObject(WHITE_BRUSH);
-	wndclass.lpszClassName  = szAppName;
-	wndclass.lpszMenuName	= NULL;
+	wndclass.cbSize = sizeof(wndclass);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.lpfnWndProc = WndProc;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hInstance = hInstance;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH) GetStockObject(WHITE_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
 
 	RegisterClassEx(&wndclass);
 
@@ -120,9 +121,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLine
 	ShowWindow(hwnd, iCmdShow);
 	UpdateWindow(hwnd);
 
-	while ( GetMessage(&msg, NULL, 0, 0) ) {
-		 TranslateMessage(&msg);
-		 DispatchMessage(&msg);
+	while (GetMessage(&msg, NULL, 0, 0)) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
 
 	return msg.wParam;
@@ -145,11 +146,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 
 	case WM_TIMER:
 		switch (wParam) {
-			case timer_id:
-				GetClientRect(hwnd, &s);
-				pb->Move(s.right, s.bottom);
-				InvalidateRect(hwnd, NULL, FALSE);
-				return 0;
+		case timer_id:
+			GetClientRect(hwnd, &s);
+			pb->Move(s.right, s.bottom);
+			InvalidateRect(hwnd, NULL, FALSE);
+			return 0;
 		}
 	break;
 
@@ -161,20 +162,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 		HDC hdcMem = CreateCompatibleDC(hdc);
 		HBITMAP hbmMem = CreateCompatibleBitmap(hdc, ps.rcPaint.right - ps.rcPaint.left, ps.rcPaint.bottom - ps.rcPaint.top);
 		HANDLE hOld = SelectObject(hdcMem, hbmMem);
-		Rectangle(hdcMem, 0, 0, ps.rcPaint.right - ps.rcPaint.left, ps.rcPaint.bottom - ps.rcPaint.top);
 #else
 		HDC hdcMem = hdc;
 #endif
+		Rectangle(hdcMem, 0, 0, ps.rcPaint.right - ps.rcPaint.left, ps.rcPaint.bottom - ps.rcPaint.top); //clear all area
 		SelectObject(hdcMem, GetStockObject(WHITE_PEN));
-		Rectangle(hdcMem, 30, 1, 95, 40);  //clear transparent text area
 		while (!cleaners.empty()) {
 			Cleaner *b = cleaners.front();
 			cleaners.pop();
 			Ellipse(hdcMem, b->x - b->r - 1, b->y - b->r - 1, b->x + b->r + 1, b->y + b->r + 1);
 			delete b;
 		}
-		for (int i = 0; i < objects.size(); i++) {
-			StaticBall *p = (StaticBall*) objects.front();
+		for (unsigned i = 0; i < objects.size(); i++) {
+			StaticBall *p = (StaticBall*)objects.front();
 			objects.pop();
 			objects.push(p);
 			if (p->color == 0) {
@@ -187,7 +187,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 			}
 			Ellipse(hdcMem, p->x - p->r, p->y - p->r, p->x + p->r, p->y + p->r);
 		}
-		SetBkMode (hdcMem, TRANSPARENT);
+		SetBkMode(hdcMem, TRANSPARENT);
 		sprintf(s, "Objects = %d  ", objects.size());
 		TextOut(hdcMem, 0, 0, s, strlen(s));
 		sprintf(s, "Speed = %.2f  ", sqrt(pb->dx*pb->dx + pb->dy*pb->dy));
@@ -203,7 +203,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 		return 0;
 	}
 
-	 case WM_LBUTTONDOWN: {
+	case WM_ERASEBKGND:
+		return 1;
+
+	case WM_LBUTTONDOWN: {
 		objects.push(new StaticBall(hwnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), floor(96.*rand()/RAND_MAX + 5), 1));
 		return 0;
 	}
