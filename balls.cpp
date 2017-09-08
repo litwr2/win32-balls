@@ -7,6 +7,7 @@
 #include <ctime>
 using namespace std;
 
+//#define DOUBLE_BUFFER
 #define ID_TIMER1 0
 #define FREQ_TIMER1 10
 
@@ -162,12 +163,22 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
     case WM_PAINT: {
        char s[80];
        hdc = BeginPaint(hwnd, &ps);
-       SelectObject(hdc, GetStockObject(WHITE_PEN));
-       Rectangle(hdc, 20, 0, 90, 40);  //clear transparent text area
+
+#ifdef DOUBLEBUFFER
+       HDC hdcMem = CreateCompatibleDC(hdc);
+       HBITMAP hbmMem = CreateCompatibleBitmap(hdc, ps.rcPaint.right - ps.rcPaint.left, ps.rcPaint.bottom - ps.rcPaint.top);
+       HANDLE hOld = SelectObject(hdcMem, hbmMem);
+       Rectangle(hdcMem, 0, 0, ps.rcPaint.right - ps.rcPaint.left, ps.rcPaint.bottom - ps.rcPaint.top);
+#else
+       HDC hdcMem = hdc;
+#endif
+       
+       SelectObject(hdcMem, GetStockObject(WHITE_PEN));
+       Rectangle(hdcMem, 30, 1, 95, 40);  //clear transparent text area
        while (!cleaners.empty()) {
           Cleaner *b = cleaners.front();
 	  cleaners.pop();
-          Ellipse(hdc, b->x - b->r - 1, b->y - b->r - 1, b->x + b->r + 1, b->y + b->r + 1);
+          Ellipse(hdcMem, b->x - b->r - 1, b->y - b->r - 1, b->x + b->r + 1, b->y + b->r + 1);
           delete b;
        }
        for (int i = 0; i < objects.size(); i++) {
@@ -175,20 +186,27 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	  objects.pop();
 	  objects.push(p);
 	  if (p->color == 0) {
-	     SelectObject(hdc, GetStockObject(BLACK_BRUSH));
-	     SelectObject(hdc, GetStockObject(BLACK_PEN));
+	     SelectObject(hdcMem, GetStockObject(BLACK_BRUSH));
+	     SelectObject(hdcMem, GetStockObject(BLACK_PEN));
 	  }
 	  else {
-	     SelectObject(hdc, hBrush);
-	     SelectObject(hdc, hPen);
+	     SelectObject(hdcMem, hBrush);
+	     SelectObject(hdcMem, hPen);
 	  }
-	  Ellipse(hdc, p->x - p->r, p->y - p->r, p->x + p->r, p->y + p->r);
+	  Ellipse(hdcMem, p->x - p->r, p->y - p->r, p->x + p->r, p->y + p->r);
        }
-       SetBkMode (hdc, TRANSPARENT);
+       SetBkMode (hdcMem, TRANSPARENT);
        sprintf(s, "Objects = %d  ", objects.size());
-       TextOut(hdc, 0, 0, s, strlen(s));
+       TextOut(hdcMem, 0, 0, s, strlen(s));
        sprintf(s, "Speed = %.2f  ", sqrt(pb->dx*pb->dx + pb->dy*pb->dy));
-       TextOut(hdc, 0, 20, s, strlen(s));       
+       TextOut(hdcMem, 0, 20, s, strlen(s));
+
+#ifdef DOUBLEBUFFER
+       BitBlt(hdc, 0, 0, ps.rcPaint.right - ps.rcPaint.left, ps.rcPaint.bottom - ps.rcPaint.top, hdcMem, 0, 0, SRCCOPY);
+       SelectObject(hdcMem, hOld);
+       DeleteObject(hbmMem);
+       DeleteDC(hdcMem);
+#endif
        EndPaint(hwnd, &ps);
        return 0;
     }
