@@ -163,11 +163,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
        char s[80];
        hdc = BeginPaint(hwnd, &ps);
        SelectObject(hdc, GetStockObject(WHITE_PEN));
-       SelectObject(ps.hdc, GetStockObject(WHITE_PEN));
+       Rectangle(hdc, 20, 0, 90, 40);  //clear transparent text area
        while (!cleaners.empty()) {
           Cleaner *b = cleaners.front();
 	  cleaners.pop();
-          Ellipse(ps.hdc, b->x - b->r - 1, b->y - b->r - 1, b->x + b->r + 1, b->y + b->r + 1);
+          Ellipse(hdc, b->x - b->r - 1, b->y - b->r - 1, b->x + b->r + 1, b->y + b->r + 1);
           delete b;
        }
        for (int i = 0; i < objects.size(); i++) {
@@ -175,15 +175,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	  objects.pop();
 	  objects.push(p);
 	  if (p->color == 0) {
-	     SelectObject(ps.hdc, GetStockObject(BLACK_BRUSH));
+	     SelectObject(hdc, GetStockObject(BLACK_BRUSH));
 	     SelectObject(hdc, GetStockObject(BLACK_PEN));
 	  }
 	  else {
-	     SelectObject(ps.hdc, hBrush);
+	     SelectObject(hdc, hBrush);
 	     SelectObject(hdc, hPen);
 	  }
-	  Ellipse(ps.hdc, p->x - p->r, p->y - p->r, p->x + p->r, p->y + p->r);
+	  Ellipse(hdc, p->x - p->r, p->y - p->r, p->x + p->r, p->y + p->r);
        }
+       SetBkMode (hdc, TRANSPARENT);
        sprintf(s, "Objects = %d  ", objects.size());
        TextOut(hdc, 0, 0, s, strlen(s));
        sprintf(s, "Speed = %.2f  ", sqrt(pb->dx*pb->dx + pb->dy*pb->dy));
