@@ -7,11 +7,10 @@
 #include <ctime>
 using namespace std;
 
-//#define DOUBLE_BUFFER
-#define ID_TIMER1 0
-#define FREQ_TIMER1 10
-
+//#define DOUBLE_BUFFER  //not optimized
+#define TIMER_FREQ 10 //10 milliseconds, a less value means faster
 #define sgn(x) ((x) < 0 ? -1 : ((x) > 0 ? 1 : 0))
+
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 struct Cleaner {
@@ -58,16 +57,13 @@ struct MainBall: public StaticBall {
 	    objects.push(p);
 	    continue;
 	 }
-	 double speed = sqrt(dx*dx + dy*dy);
-	 int f = 0;
-	 for (double i = speed; i > 0; i -= 1)
-	   if (pow(x + dx*i/speed - p->x, 2) + pow(y + dy*i/speed - p->y, 2) <= (r + 1)*(r + 1) + (p->r + 1)*(p->r + 1)) {
-	       f = 1;
+	 double speed = sqrt(dx*dx + dy*dy), q;
+	 for (q = speed; q > 0; q -= 1)
+	   if (pow(x + dx*q/speed - p->x, 2) + pow(y + dy*q/speed - p->y, 2) <= (r + 1)*(r + 1) + (p->r + 1)*(p->r + 1)) {
+	       cleaners.push(new Cleaner(p->x, p->y, p->r));
 	       break;
 	    }
-         if (f) 
-	    cleaners.push(new Cleaner(p->x, p->y, p->r));
-	 else
+         if (q <= 0) 
             objects.push(p);
       }
    }
@@ -117,11 +113,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     RegisterClassEx(&wndclass);
 
-    hwnd = CreateWindow(szAppName, (LPCTSTR)"Balls!",
-			WS_OVERLAPPEDWINDOW,
-			CW_USEDEFAULT, CW_USEDEFAULT,
-			CW_USEDEFAULT, CW_USEDEFAULT,
-			NULL, NULL, hInstance, NULL);
+    hwnd = CreateWindow(szAppName, (LPCTSTR)"Balls!", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 
+       CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
     for(int i = 0; i < time(0)%777; i++) rand();  //better than srand(timer(0))
     pb = new MainBall(hwnd, 100, 100, floor(rand()*6./RAND_MAX + 5), 0, floor(rand()*10./RAND_MAX + 1), floor(rand()*10./RAND_MAX + 1));
     
@@ -142,17 +135,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
     RECT        s;
     static HPEN        hPen;
     static HBRUSH      hBrush;
-
+    const int timer_id = 0;
+    
     switch (iMsg) {
     case WM_CREATE:
-       SetTimer(hwnd, ID_TIMER1, FREQ_TIMER1, NULL);
+       SetTimer(hwnd, timer_id, TIMER_FREQ, NULL);
        hBrush = CreateSolidBrush(RGB(250, 0, 0));
        hPen = CreatePen(PS_SOLID, 1, RGB(250, 10, 5));
        return 0;
 
     case WM_TIMER:
        switch (wParam) { 
-          case ID_TIMER1: 
+          case timer_id: 
 	     GetClientRect(hwnd, &s);
              pb->Move(s.right, s.bottom);
 	     InvalidateRect(hwnd, NULL, FALSE);
@@ -219,7 +213,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
     case WM_DESTROY:
        DeleteObject(hPen);
        DeleteObject(hBrush);
-       KillTimer(hwnd, ID_TIMER1);
+       KillTimer(hwnd, timer_id);
        PostQuitMessage(0);
        return 0;
     }
