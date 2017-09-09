@@ -26,14 +26,13 @@ queue<void*> objects;
 struct StaticBall {
 	double x, y, r;
 	int color;
-	HWND hwnd;
-	StaticBall(HWND hwnd_i, double x_i, double y_i, double r_i, int color_i): x(x_i), y(y_i), r(r_i), color(color_i), hwnd(hwnd_i) {}
+	StaticBall(double x_i, double y_i, double r_i, int color_i): x(x_i), y(y_i), r(r_i), color(color_i) {}
 	virtual ~StaticBall() {}
 };
 
 struct MainBall: public StaticBall {
 	double dx, dy;  //velocity vector
-	MainBall(HWND hwnd_i, double x_i, double y_i, double r_i, int color_i, double dx_i, double dy_i): StaticBall(hwnd_i, x_i, y_i, r_i, color_i), dx(dx_i), dy(dy_i) {
+	MainBall(double x_i, double y_i, double r_i, int color_i, double dx_i, double dy_i): StaticBall(x_i, y_i, r_i, color_i), dx(dx_i), dy(dy_i) {
 		objects.push(this);
 	}
 	virtual ~MainBall() {}
@@ -117,7 +116,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLine
 	hwnd = CreateWindow(szAppName, (LPCTSTR)"Balls!", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 
 		 CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 	for(int i = 0; i < time(0)%777; i++) rand();  //better than srand(timer(0))
-	pb = new MainBall(hwnd, 100, 100, floor(rand()*6./RAND_MAX + 5), 0, floor(rand()*10./RAND_MAX + 1), floor(rand()*10./RAND_MAX + 1));
+	pb = new MainBall(100, 100, floor(rand()*6./RAND_MAX + 5), 0, floor(rand()*10./RAND_MAX + 1), floor(rand()*10./RAND_MAX + 1));
 
 	ShowWindow(hwnd, iCmdShow);
 	UpdateWindow(hwnd);
@@ -208,7 +207,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 		return 1;
 
 	case WM_LBUTTONDOWN: {
-		objects.push(new StaticBall(hwnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), floor(96.*rand()/RAND_MAX + 5), 1));
+		objects.push(new StaticBall(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), floor(96.*rand()/RAND_MAX + 5), 1));
 		return 0;
 	}
 
