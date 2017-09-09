@@ -60,7 +60,7 @@ struct MainBall: public StaticBall {
 			}
 		double speed = sqrt(dx*dx + dy*dy), q;
 		for (q = speed; q > 0; q -= 1)
-			if (pow(x + dx*q/speed - p->x, 2) + pow(y + dy*q/speed - p->y, 2) <= (r + 1)*(r + 1) + (p->r + 1)*(p->r + 1)) {
+			if (pow(x + dx*q/speed - p->x, 2) + pow(y + dy*q/speed - p->y, 2) <= (r + 2)*(r + 2) + (p->r + 2)*(p->r + 2)) {
 				cleaners.push(new Cleaner(p->x, p->y, p->r));
 				break;
 			}
@@ -194,7 +194,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 		TextOut(hdcMem, 0, 20, s, strlen(s));
 
 #ifdef DOUBLEBUFFER
-		BitBlt(hdc, 0, 0, ps.rcPaint.right - ps.rcPaint.left, ps.rcPaint.bottom - ps.rcPaint.top, hdcMem, 0, 0, SRCCOPY);
+		BitBlt(hdc, 0, 0, ps.rcPaint.right, ps.rcPaint.bottom, hdcMem, 0, 0, SRCCOPY);
 		SelectObject(hdcMem, hOld);
 		DeleteObject(hbmMem);
 		DeleteDC(hdcMem);
