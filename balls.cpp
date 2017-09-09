@@ -5,6 +5,7 @@
 #include <queue>
 #include <cmath>
 #include <ctime>
+#include <typeinfo>
 using namespace std;
 
 //#define DOUBLE_BUFFER  //not optimized
@@ -54,7 +55,7 @@ struct MainBall: public StaticBall {
 		for (unsigned i = 0; i < objects.size(); i++) {
 			StaticBall *p = (StaticBall*)objects.front();
 			objects.pop();
-			if (p == this) {
+			if (typeid(*p) == typeid(MainBall)) { //we may want many main balls
 				objects.push(p);
 				continue;
 			}
@@ -131,10 +132,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLine
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	PAINTSTRUCT ps;
-	HDC			hdc;
-	RECT		  s;
-	static HPEN		  hPen;
-	static HBRUSH		hBrush;
+	HDC hdc;
+	RECT s;
+	static HPEN hPen;
+	static HBRUSH hBrush;
 	const int timer_id = 0;
 
 	switch (iMsg) {
@@ -160,12 +161,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 
 #ifdef DOUBLEBUFFER
 		HDC hdcMem = CreateCompatibleDC(hdc);
-		HBITMAP hbmMem = CreateCompatibleBitmap(hdc, ps.rcPaint.right - ps.rcPaint.left, ps.rcPaint.bottom - ps.rcPaint.top);
+		HBITMAP hbmMem = CreateCompatibleBitmap(hdc, ps.rcPaint.right, ps.rcPaint.bottom);
 		HANDLE hOld = SelectObject(hdcMem, hbmMem);
 #else
 		HDC hdcMem = hdc;
 #endif
-		Rectangle(hdcMem, 0, 0, ps.rcPaint.right - ps.rcPaint.left, ps.rcPaint.bottom - ps.rcPaint.top); //clear all area
+		Rectangle(hdcMem, 0, 0, ps.rcPaint.right, ps.rcPaint.bottom); //clear all area
 		SelectObject(hdcMem, GetStockObject(WHITE_PEN));
 		while (!cleaners.empty()) {
 			Cleaner *b = cleaners.front();
