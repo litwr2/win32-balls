@@ -8,7 +8,7 @@
 #include <typeinfo>
 using namespace std;
 
-//#define DOUBLE_BUFFER  //not optimized
+#define DOUBLEBUFFER  //not optimized
 #define TIMER_FREQ 10 //10 milliseconds, a less value means faster
 
 #define sgn(x) ((x) < 0 ? -1 : ((x) > 0 ? 1 : 0))
