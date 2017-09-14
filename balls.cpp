@@ -170,7 +170,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 		while (!cleaners.empty()) {
 			Cleaner *b = cleaners.front();
 			cleaners.pop();
-			Ellipse(hdcMem, b->x - b->r - 1, b->y - b->r - 1, b->x + b->r + 1, b->y + b->r + 1);
+			//for future more accurate drawing, whithout clear all area on the every cycle
+//			Ellipse(hdcMem, b->x - b->r - 1, b->y - b->r - 1, b->x + b->r + 1, b->y + b->r + 1);
 			delete b;
 		}
 		for (unsigned i = 0; i < objects.size(); i++) {
